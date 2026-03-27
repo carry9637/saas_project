@@ -193,25 +193,28 @@ const ServiceCard = ({ service, onEdit, onDelete }) => {
     <div className="card card-hover flex flex-col overflow-hidden group">
       {/* Gradient header */}
       <div
-        className={`bg-gradient-to-r ${theme.grad} px-5 py-5 relative overflow-hidden`}
+        className={`bg-gradient-to-r ${theme.grad} relative overflow-hidden`}
+        style={{ padding: "28px 24px 28px 24px", minHeight: "110px" }}
       >
         <div
-          className="absolute right-0 top-0 h-20 w-20 rounded-full
+          className="absolute right-0 top-0 h-28 w-28 rounded-full
           bg-white/10 -translate-y-1/2 translate-x-1/2"
         />
-        <div className="relative z-10 flex items-start justify-between">
+        <div className="relative z-10 flex items-center justify-between">
           <div
-            className="h-11 w-11 rounded-xl bg-white/20 backdrop-blur-sm
-            flex items-center justify-center"
+            className="h-13 w-13 rounded-2xl bg-white/20 backdrop-blur-sm
+            flex items-center justify-center border border-white/30"
+            style={{ height: "52px", width: "52px" }}
           >
-            <Icon size={20} className="text-white" />
+            <Icon size={24} className="text-white" />
           </div>
           <span
-            className={`badge text-[11px] ${
+            className={`text-[13px] font-bold rounded-full border ${
               service.status === "Active"
-                ? "bg-white/20 text-white border-white/30"
-                : "bg-white/10 text-white/60 border-white/20"
+                ? "bg-white/20 text-white border-white/40"
+                : "bg-black/20 text-white/70 border-white/20"
             }`}
+            style={{ padding: "7px 16px" }}
           >
             {service.status}
           </span>
@@ -219,7 +222,7 @@ const ServiceCard = ({ service, onEdit, onDelete }) => {
       </div>
 
       {/* Body */}
-      <div className="flex-1" style={{ padding: "20px 22px 22px" }}>
+      <div className="flex-1" style={{ padding: "24px 24px 24px" }}>
         <h3
           style={{
             fontSize: "15px",
@@ -260,7 +263,7 @@ const ServiceCard = ({ service, onEdit, onDelete }) => {
 
       {/* Footer actions */}
       <div
-        className="border-t border-slate-100 px-5 py-3 flex gap-2
+        className="border-t border-slate-100 px-6 py-4 flex gap-3
         opacity-0 group-hover:opacity-100 transition-opacity"
       >
         <button
@@ -317,6 +320,8 @@ export default function Services() {
         flexDirection: "column",
         gap: "20px",
         paddingBottom: "40px",
+        paddingLeft: "8px",
+        paddingRight: "8px",
       }}
     >
       {/* Header */}
