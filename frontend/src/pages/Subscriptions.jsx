@@ -84,8 +84,8 @@ const SubModal = ({ sub, onClose, onSave }) => {
             <X size={15} />
           </button>
         </div>
-        <div className="modal-body space-y-4">
-          <div>
+        <div className="modal-body space-y-5">
+          <div className="flex flex-col gap-1.5">
             <label className="label">Client</label>
             <select
               value={form.clientName}
@@ -97,7 +97,7 @@ const SubModal = ({ sub, onClose, onSave }) => {
               ))}
             </select>
           </div>
-          <div>
+          <div className="flex flex-col gap-1.5">
             <label className="label">Plan</label>
             <select
               value={form.plan}
@@ -109,8 +109,8 @@ const SubModal = ({ sub, onClose, onSave }) => {
               ))}
             </select>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
+          <div className="grid grid-cols-2 gap-5">
+            <div className="flex flex-col gap-1.5">
               <label className="label">Start Date</label>
               <input
                 type="date"
@@ -119,7 +119,7 @@ const SubModal = ({ sub, onClose, onSave }) => {
                 className="input-base"
               />
             </div>
-            <div>
+            <div className="flex flex-col gap-1.5">
               <label className="label">Expiry Date</label>
               <input
                 type="date"
