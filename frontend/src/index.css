@@ -311,12 +311,12 @@ textarea {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  z-index: 50;
+  z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(15, 23, 42, 0.5);
-  backdrop-filter: blur(4px);
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(6px);
   padding: 16px;
   animation: fadeIn 0.15s ease-out;
 }
@@ -335,6 +335,9 @@ textarea {
   box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.18);
   width: 100%;
   max-width: 480px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
   animation: slideUp 0.2s ease-out;
 }
 @keyframes slideUp {
@@ -348,6 +351,7 @@ textarea {
   }
 }
 .modal-header {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -356,8 +360,11 @@ textarea {
 }
 .modal-body {
   padding: 24px 28px;
+  overflow-y: auto;
+  min-height: 0;
 }
 .modal-footer {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: flex-end;

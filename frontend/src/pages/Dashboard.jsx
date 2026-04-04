@@ -12,11 +12,7 @@ import {
   CheckCircle2,
   Clock,
 } from "lucide-react";
-import {
-  dashboardService,
-  clientService,
-  ticketService,
-} from "../services/mockData";
+import { fetchClients, fetchTickets } from "../services/api";
 
 /* ─── Trend badge ─── */
 const Trend = ({ val }) => {
@@ -203,12 +199,51 @@ export default function Dashboard() {
   const [tickets, setTickets] = useState([]);
 
   useEffect(() => {
-    setStats(dashboardService.getStats());
-    setClients(clientService.getAll().slice(0, 5));
-    setTickets(ticketService.getAll().slice(0, 4));
+    const load = async () => {
+      try {
+        const [clientsRes, ticketsRes] = await Promise.all([
+          fetchClients(),
+          fetchTickets(),
+        ]);
+        const allClients = clientsRes.data;
+        const allTickets = ticketsRes.data;
+
+        const active = allClients.filter((c) => c.status === "Active").length;
+        const inactive = allClients.filter((c) => c.status === "Inactive").length;
+        const open = allTickets.filter((t) => t.status === "Open").length;
+        const inProgress = allTickets.filter((t) => t.status === "In Progress").length;
+        const resolved = allTickets.filter((t) => t.status === "Resolved").length;
+
+        setStats({
+          totalClients: allClients.length,
+          activeClients: active,
+          inactiveClients: inactive,
+          totalTickets: allTickets.length,
+          openTickets: open,
+          inProgressTickets: inProgress,
+          resolvedTickets: resolved,
+          // computed/default fields used by stat cards
+          revenue: 0,
+          revenueGrowth: 0,
+          clientGrowth: 0,
+          activeSubscriptions: active,
+          ticketResolution: allTickets.length > 0 ? Math.round((resolved / allTickets.length) * 100) : 0,
+        });
+        setClients(allClients.slice(0, 5));
+        setTickets(allTickets.slice(0, 4));
+      } catch {
+        // keep null — loading state shows
+      }
+    };
+    load();
   }, []);
 
-  if (!stats) return null;
+  if (!stats) return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "60vh", flexDirection: "column", gap: "16px" }}>
+      <div style={{ width: "40px", height: "40px", border: "4px solid #e2e8f0", borderTopColor: "#4f46e5", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+      <p style={{ color: "#64748b", fontSize: "14px" }}>Loading dashboard...</p>
+    </div>
+  );
 
   return (
     /* NOTE: DashboardLayout already adds px-6 py-7 + page-enter — no extra padding here */

@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { useState, useEffect } from "react";
 import {
   Plus,
@@ -14,7 +15,12 @@ import {
   Database,
   Box,
 } from "lucide-react";
-import { serviceService } from "../services/mockData";
+import {
+  fetchServices,
+  createService,
+  updateService,
+  deleteService,
+} from "../services/api";
 
 /* ── Icon list + colors for cards ── */
 const SERVICE_ICONS = [Server, Layers, Zap, Globe, Shield, Database, Box];
@@ -37,8 +43,8 @@ const CARD_THEMES = [
   { grad: "from-sky-500 to-blue-700", light: "bg-sky-50 text-sky-700" },
 ];
 
-const getTheme = (id) => CARD_THEMES[(id - 1) % CARD_THEMES.length];
-const getIcon = (id) => SERVICE_ICONS[(id - 1) % SERVICE_ICONS.length];
+const getTheme = (id) => CARD_THEMES[Math.abs(String(id).split("").reduce((a,ch)=>a+ch.charCodeAt(0),0)) % CARD_THEMES.length];
+const getIcon = (id) => SERVICE_ICONS[Math.abs(String(id).split("").reduce((a,ch)=>a+ch.charCodeAt(0),0)) % SERVICE_ICONS.length];
 
 /* ── ServiceModal ── */
 const ServiceModal = ({ service, onClose, onSave }) => {
@@ -49,25 +55,63 @@ const ServiceModal = ({ service, onClose, onSave }) => {
   );
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
-  return (
+  return createPortal(
     <div className="modal-overlay" onClick={onClose}>
       <div
-        className="modal-card w-full max-w-[460px]"
+        className="modal-card w-full"
+        style={{ maxWidth: 480 }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="modal-header">
-          <h3 className="text-[16px] font-bold text-slate-900">
-            {service ? "Edit Service" : "Add New Service"}
-          </h3>
+        {/* ── Gradient Header ── */}
+        <div
+          style={{
+            background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
+            borderRadius: "20px 20px 0 0",
+            padding: "22px 26px 20px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <div
+              style={{
+                width: 42, height: 42, borderRadius: 12,
+                background: "rgba(255,255,255,0.18)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
+              }}
+            >
+              <Server size={20} color="#fff" />
+            </div>
+            <div>
+              <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 2 }}>
+                {service ? "Edit Service" : "New Service"}
+              </p>
+              <h3 style={{ color: "#fff", fontSize: 17, fontWeight: 700, margin: 0 }}>
+                {service ? service.name : "Add a Service Plan"}
+              </h3>
+            </div>
+          </div>
           <button
             onClick={onClose}
-            className="h-8 w-8 rounded-lg bg-slate-100 hover:bg-slate-200
-              flex items-center justify-center transition-colors text-slate-600"
+            style={{
+              width: 32, height: 32, borderRadius: 8,
+              background: "rgba(255,255,255,0.15)",
+              border: "none", cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              transition: "background 0.15s",
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.28)"}
+            onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.15)"}
           >
-            <X size={15} />
+            <X size={15} color="#fff" />
           </button>
         </div>
-        <div className="modal-body space-y-4">
+
+        {/* ── Body ── */}
+        <div style={{ padding: "24px 26px", display: "flex", flexDirection: "column", gap: 18, overflowY: "auto", minHeight: 0 }}>
+          {/* Name */}
           <div>
             <label className="label">Service Name</label>
             <input
@@ -75,8 +119,10 @@ const ServiceModal = ({ service, onClose, onSave }) => {
               onChange={set("name")}
               placeholder="e.g. Analytics Pro"
               className="input-base"
+              style={{ height: 44, fontSize: 14 }}
             />
           </div>
+          {/* Description */}
           <div>
             <label className="label">Description</label>
             <textarea
@@ -84,28 +130,43 @@ const ServiceModal = ({ service, onClose, onSave }) => {
               value={form.description}
               onChange={set("description")}
               placeholder="Brief description of the service…"
-              className="w-full px-3.5 py-2.5 text-[13.5px] border border-slate-200 rounded-[10px]
-                focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-400
-                placeholder:text-slate-400 text-slate-900 resize-none transition-all"
+              style={{
+                width: "100%", padding: "10px 14px", fontSize: 14,
+                border: "1.5px solid #e5e7eb", borderRadius: 10,
+                fontFamily: "inherit", color: "#111827", background: "#fff",
+                resize: "none", transition: "border-color 0.15s, box-shadow 0.15s",
+                outline: "none", lineHeight: 1.6,
+              }}
+              onFocus={e => { e.target.style.borderColor = "#6366f1"; e.target.style.boxShadow = "0 0 0 3px rgba(99,102,241,0.12)"; }}
+              onBlur={e => { e.target.style.borderColor = "#e5e7eb"; e.target.style.boxShadow = "none"; }}
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          {/* Price + Status */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
             <div>
               <label className="label">Price (USD/mo)</label>
-              <input
-                type="number"
-                value={form.price}
-                onChange={set("price")}
-                placeholder="49"
-                className="input-base"
-              />
+              <div style={{ position: "relative" }}>
+                <span style={{
+                  position: "absolute", left: 13, top: "50%", transform: "translateY(-50%)",
+                  fontSize: 14, color: "#6b7280", fontWeight: 600, pointerEvents: "none",
+                }}>$</span>
+                <input
+                  type="number"
+                  value={form.price}
+                  onChange={set("price")}
+                  placeholder="49"
+                  className="input-base"
+                  style={{ height: 44, fontSize: 14, paddingLeft: 26 }}
+                />
+              </div>
             </div>
             <div>
               <label className="label">Status</label>
               <select
                 value={form.status}
                 onChange={set("status")}
-                className="input-base bg-white cursor-pointer"
+                className="input-base"
+                style={{ height: 44, fontSize: 14, background: "#fff", cursor: "pointer" }}
               >
                 <option>Active</option>
                 <option>Inactive</option>
@@ -113,28 +174,33 @@ const ServiceModal = ({ service, onClose, onSave }) => {
             </div>
           </div>
         </div>
-        <div className="modal-footer">
-          <button onClick={onClose} className="btn-secondary">
-            Cancel
-          </button>
+
+        {/* ── Footer ── */}
+        <div
+          style={{
+            display: "flex", alignItems: "center", justifyContent: "flex-end",
+            gap: 10, padding: "14px 26px 20px",
+            borderTop: "1px solid #f1f5f9", flexShrink: 0,
+          }}
+        >
+          <button onClick={onClose} className="btn-secondary">Cancel</button>
           <button
-            onClick={() => {
-              onSave(form);
-              onClose();
-            }}
+            onClick={() => { onSave(form); onClose(); }}
             className="btn-primary"
+            style={{ background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)", boxShadow: "0 4px 14px rgba(99,102,241,0.35)" }}
           >
             <Check size={14} />
             {service ? "Save Changes" : "Add Service"}
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
 /* ── Delete modal ── */
-const DeleteModal = ({ service, onClose, onConfirm }) => (
+const DeleteModal = ({ service, onClose, onConfirm }) => createPortal(
   <div className="modal-overlay" onClick={onClose}>
     <div
       className="modal-card w-full max-w-[380px]"
@@ -170,7 +236,7 @@ const DeleteModal = ({ service, onClose, onConfirm }) => (
         </button>
         <button
           onClick={() => {
-            onConfirm(service.id);
+            onConfirm(service._id || service.id);
             onClose();
           }}
           className="h-[38px] px-5 rounded-[10px] flex items-center gap-2
@@ -181,13 +247,14 @@ const DeleteModal = ({ service, onClose, onConfirm }) => (
         </button>
       </div>
     </div>
-  </div>
+  </div>,
+  document.body
 );
 
 /* ── Service card ── */
 const ServiceCard = ({ service, onEdit, onDelete }) => {
-  const theme = getTheme(service.id);
-  const Icon = getIcon(service.id);
+  const theme = getTheme(service._id || service.id);
+  const Icon = getIcon(service._id || service.id);
 
   return (
     <div className="card card-hover flex flex-col overflow-hidden group">
@@ -292,22 +359,50 @@ export default function Services() {
   const [addModal, setAdd] = useState(false);
   const [editService, setEdit] = useState(null);
   const [delService, setDel] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  useEffect(() => {
-    setAll(serviceService.getAll());
-  }, []);
+  const load = async () => {
+    try {
+      setLoading(true);
+      const { data } = await fetchServices();
+      setAll(data);
+      setError("");
+    } catch {
+      setError("Failed to load services.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const handleSaveNew = (data) => {
-    serviceService.create(data);
-    setAll(serviceService.getAll());
+  useEffect(() => { load(); }, []);
+
+  const handleSaveNew = async (data) => {
+    try {
+      await createService(data);
+      await load();
+      setAdd(false);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to create service.");
+    }
   };
-  const handleSaveEdit = (data) => {
-    serviceService.update(data.id, data);
-    setAll(serviceService.getAll());
+  const handleSaveEdit = async (data) => {
+    try {
+      await updateService(data._id || data.id, data);
+      await load();
+      setEdit(null);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to update service.");
+    }
   };
-  const handleDelete = (id) => {
-    serviceService.delete(id);
-    setAll(serviceService.getAll());
+  const handleDelete = async (id) => {
+    try {
+      await deleteService(id);
+      await load();
+      setDel(null);
+    } catch {
+      setError("Failed to delete service.");
+    }
   };
 
   const active = all.filter((s) => s.status === "Active").length;
@@ -427,7 +522,7 @@ export default function Services() {
         >
           {all.map((s) => (
             <ServiceCard
-              key={s.id}
+              key={s._id || s.id}
               service={s}
               onEdit={setEdit}
               onDelete={setDel}

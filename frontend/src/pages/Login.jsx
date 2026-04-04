@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
   Eye,
@@ -12,6 +13,8 @@ import {
 
 export default function Login() {
   const { login } = useAuth();
+  const location = useLocation();
+  const registered = location.state?.registered;
   const [form, setForm] = useState({ email: "", password: "" });
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState("");
@@ -280,6 +283,21 @@ export default function Login() {
               Sign in to your admin dashboard
             </p>
 
+            {registered && (
+              <div
+                style={{
+                  marginBottom: "20px",
+                  borderRadius: "12px",
+                  background: "#f0fdf4",
+                  border: "1px solid #bbf7d0",
+                  padding: "12px 16px",
+                }}
+              >
+                <span style={{ fontSize: "13px", color: "#16a34a", fontWeight: 500 }}>
+                  Account created! Sign in below.
+                </span>
+              </div>
+            )}
             {error && (
               <div
                 style={{
@@ -311,7 +329,7 @@ export default function Login() {
                   required
                   value={form.email}
                   onChange={set("email")}
-                  placeholder="admin@saas.com"
+                  placeholder="you@example.com"
                   className="input-base"
                 />
               </div>
@@ -438,80 +456,15 @@ export default function Login() {
           </div>
 
           {/* Demo credentials */}
-          <div
-            style={{
-              marginTop: "16px",
-              borderRadius: "16px",
-              background: "#eef2ff",
-              border: "1px solid #c7d2fe",
-              padding: "18px 22px",
-            }}
-          >
-            <p
-              style={{
-                fontSize: "10.5px",
-                fontWeight: 700,
-                color: "#4f46e5",
-                textTransform: "uppercase",
-                letterSpacing: "0.1em",
-                marginBottom: "12px",
-              }}
-            >
-              Demo Credentials
-            </p>
-            <div style={{ display: "flex", gap: "32px" }}>
-              <div>
-                <p
-                  style={{
-                    fontSize: "11px",
-                    color: "#6b7280",
-                    marginBottom: "3px",
-                  }}
-                >
-                  Email
-                </p>
-                <code
-                  style={{
-                    fontSize: "13px",
-                    fontWeight: 700,
-                    color: "#3730a3",
-                  }}
-                >
-                  admin@saas.com
-                </code>
-              </div>
-              <div>
-                <p
-                  style={{
-                    fontSize: "11px",
-                    color: "#6b7280",
-                    marginBottom: "3px",
-                  }}
-                >
-                  Password
-                </p>
-                <code
-                  style={{
-                    fontSize: "13px",
-                    fontWeight: 700,
-                    color: "#3730a3",
-                  }}
-                >
-                  admin123
-                </code>
-              </div>
-            </div>
-          </div>
 
-          <p
-            style={{
-              textAlign: "center",
-              fontSize: "12px",
-              color: "#94a3b8",
-              marginTop: "22px",
-            }}
-          >
-            © 2026 Corelystic Inc. All rights reserved.
+          <p style={{ textAlign: "center", fontSize: "13px", color: "#64748b", marginTop: "20px" }}>
+            Don't have an account?{" "}
+            <Link to="/register" style={{ color: "#4f46e5", fontWeight: 600, textDecoration: "none" }}>
+              Create account
+            </Link>
+          </p>
+          <p style={{ textAlign: "center", fontSize: "11px", color: "#cbd5e1", marginTop: "10px" }}>
+            © 2026 Corelystic Inc.
           </p>
         </div>
       </div>

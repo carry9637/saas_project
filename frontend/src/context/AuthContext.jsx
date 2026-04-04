@@ -1,14 +1,7 @@
 import { createContext, useContext, useState, useEffect } from "react";
+import API from "../services/api";
 
 const AuthContext = createContext(null);
-
-// Mock admin credentials for frontend-only mode
-const MOCK_ADMIN = {
-  email: "admin@saas.com",
-  password: "admin123",
-  name: "Admin User",
-  role: "Super Admin",
-};
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -24,20 +17,23 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = async (email, password) => {
-    // Frontend-only mock login — will be replaced with API call next week
-    if (email === MOCK_ADMIN.email && password === MOCK_ADMIN.password) {
+    try {
+      const { data } = await API.post("/auth/login", { email, password });
       const userData = {
-        name: MOCK_ADMIN.name,
-        email: MOCK_ADMIN.email,
-        role: MOCK_ADMIN.role,
+        _id: data._id,
+        name: data.name,
+        email: data.email,
+        role: data.role,
       };
-      const fakeToken = "mock-jwt-token-" + Date.now();
-      localStorage.setItem("token", fakeToken);
+      localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(userData));
       setUser(userData);
       return { success: true };
+    } catch (err) {
+      const message =
+        err.response?.data?.message || "Login failed. Please try again.";
+      return { success: false, message };
     }
-    return { success: false, message: "Invalid email or password" };
   };
 
   const logout = () => {

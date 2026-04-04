@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { useState, useEffect, useRef } from "react";
 import {
   Plus,
@@ -12,7 +13,12 @@ import {
   Check,
   AlertCircle,
 } from "lucide-react";
-import { clientService } from "../services/mockData";
+import {
+  fetchClients,
+  createClient,
+  updateClient,
+  deleteClient,
+} from "../services/api";
 
 const PLANS = ["All Plans", "Enterprise", "Pro", "Starter"];
 const STATUSES = ["All Status", "Active", "Inactive"];
@@ -53,60 +59,100 @@ const ClientModal = ({ client, onClose, onSave }) => {
   );
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
-  return (
+  return createPortal(
     <div className="modal-overlay" onClick={onClose}>
       <div
-        className="modal-card w-full max-w-[480px]"
+        className="modal-card w-full"
+        style={{ maxWidth: 500 }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="modal-header">
-          <h3 className="text-[16px] font-bold text-slate-900">
-            {client ? "Edit Client" : "Add New Client"}
-          </h3>
+        {/* Gradient Header */}
+        <div
+          style={{
+            background: "linear-gradient(135deg, #0ea5e9 0%, #4f46e5 100%)",
+            borderRadius: "20px 20px 0 0",
+            padding: "22px 26px 20px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <div
+              style={{
+                width: 44, height: 44, borderRadius: 12,
+                background: "rgba(255,255,255,0.18)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
+              }}
+            >
+              <Users size={22} color="#fff" />
+            </div>
+            <div>
+              <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 2 }}>
+                {client ? "Edit Client" : "New Client"}
+              </p>
+              <h3 style={{ color: "#fff", fontSize: 17, fontWeight: 700, margin: 0 }}>
+                {client ? client.name : "Add a Client"}
+              </h3>
+            </div>
+          </div>
           <button
             onClick={onClose}
-            className="h-8 w-8 rounded-lg bg-slate-100 hover:bg-slate-200
-              flex items-center justify-center transition-colors text-slate-600"
+            style={{
+              width: 32, height: 32, borderRadius: 8,
+              background: "rgba(255,255,255,0.15)",
+              border: "none", cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.28)"}
+            onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.15)"}
           >
-            <X size={15} />
+            <X size={15} color="#fff" />
           </button>
         </div>
-        <div className="modal-body space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2">
-              <label className="label">Full Name</label>
-              <input
-                value={form.name}
-                onChange={set("name")}
-                placeholder="Jane Doe"
-                className="input-base"
-              />
-            </div>
-            <div className="col-span-2">
-              <label className="label">Email Address</label>
-              <input
-                type="email"
-                value={form.email}
-                onChange={set("email")}
-                placeholder="jane@company.com"
-                className="input-base"
-              />
-            </div>
-            <div className="col-span-2">
-              <label className="label">Company</label>
-              <input
-                value={form.company}
-                onChange={set("company")}
-                placeholder="Acme Inc."
-                className="input-base"
-              />
-            </div>
+
+        {/* Body */}
+        <div style={{ padding: "24px 26px", display: "flex", flexDirection: "column", gap: 16, overflowY: "auto", minHeight: 0 }}>
+          <div>
+            <label className="label">Full Name</label>
+            <input
+              value={form.name}
+              onChange={set("name")}
+              placeholder="Jane Doe"
+              className="input-base"
+              style={{ height: 44 }}
+            />
+          </div>
+          <div>
+            <label className="label">Email Address</label>
+            <input
+              type="email"
+              value={form.email}
+              onChange={set("email")}
+              placeholder="jane@company.com"
+              className="input-base"
+              style={{ height: 44 }}
+            />
+          </div>
+          <div>
+            <label className="label">Company</label>
+            <input
+              value={form.company}
+              onChange={set("company")}
+              placeholder="Acme Inc."
+              className="input-base"
+              style={{ height: 44 }}
+            />
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
             <div>
               <label className="label">Plan</label>
               <select
                 value={form.plan}
                 onChange={set("plan")}
-                className="input-base bg-white cursor-pointer"
+                className="input-base"
+                style={{ height: 44, background: "#fff", cursor: "pointer" }}
               >
                 {["Enterprise", "Pro", "Starter"].map((p) => (
                   <option key={p}>{p}</option>
@@ -118,7 +164,8 @@ const ClientModal = ({ client, onClose, onSave }) => {
               <select
                 value={form.status}
                 onChange={set("status")}
-                className="input-base bg-white cursor-pointer"
+                className="input-base"
+                style={{ height: 44, background: "#fff", cursor: "pointer" }}
               >
                 <option>Active</option>
                 <option>Inactive</option>
@@ -126,28 +173,33 @@ const ClientModal = ({ client, onClose, onSave }) => {
             </div>
           </div>
         </div>
-        <div className="modal-footer">
-          <button onClick={onClose} className="btn-secondary">
-            Cancel
-          </button>
+
+        {/* Footer */}
+        <div
+          style={{
+            display: "flex", alignItems: "center", justifyContent: "flex-end",
+            gap: 10, padding: "14px 26px 20px",
+            borderTop: "1px solid #f1f5f9", flexShrink: 0,
+          }}
+        >
+          <button onClick={onClose} className="btn-secondary">Cancel</button>
           <button
-            onClick={() => {
-              onSave(form);
-              onClose();
-            }}
+            onClick={() => { onSave(form); onClose(); }}
             className="btn-primary"
+            style={{ background: "linear-gradient(135deg, #0ea5e9 0%, #4f46e5 100%)", boxShadow: "0 4px 14px rgba(79,70,229,0.3)" }}
           >
             <Check size={14} />
             {client ? "Save Changes" : "Add Client"}
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
 /* ── Delete confirmation ── */
-const DeleteModal = ({ client, onClose, onConfirm }) => (
+const DeleteModal = ({ client, onClose, onConfirm }) => createPortal(
   <div className="modal-overlay" onClick={onClose}>
     <div
       className="modal-card w-full max-w-[380px]"
@@ -183,7 +235,7 @@ const DeleteModal = ({ client, onClose, onConfirm }) => (
         </button>
         <button
           onClick={() => {
-            onConfirm(client.id);
+            onConfirm(client._id || client.id);
             onClose();
           }}
           className="h-[38px] px-5 rounded-[10px] flex items-center gap-2
@@ -194,7 +246,8 @@ const DeleteModal = ({ client, onClose, onConfirm }) => (
         </button>
       </div>
     </div>
-  </div>
+  </div>,
+  document.body
 );
 
 export default function Clients() {
@@ -206,9 +259,23 @@ export default function Clients() {
   const [editClient, setEdit] = useState(null);
   const [delClient, setDel] = useState(null);
 
-  useEffect(() => {
-    setAll(clientService.getAll());
-  }, []);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const load = async () => {
+    try {
+      setLoading(true);
+      const { data } = await fetchClients();
+      setAll(data);
+      setError("");
+    } catch {
+      setError("Failed to load clients.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { load(); }, []);
 
   const filtered = all.filter((c) => {
     const q = search.toLowerCase();
@@ -222,19 +289,34 @@ export default function Clients() {
     return matchQ && matchP && matchSt;
   });
 
-  const handleSaveNew = (data) => {
-    const created = clientService.create(data);
-    setAll(clientService.getAll());
+  const handleSaveNew = async (data) => {
+    try {
+      await createClient(data);
+      await load();
+      setAdd(false);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to create client.");
+    }
   };
 
-  const handleSaveEdit = (data) => {
-    clientService.update(data.id, data);
-    setAll(clientService.getAll());
+  const handleSaveEdit = async (data) => {
+    try {
+      await updateClient(data._id || data.id, data);
+      await load();
+      setEdit(null);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to update client.");
+    }
   };
 
-  const handleDelete = (id) => {
-    clientService.delete(id);
-    setAll(clientService.getAll());
+  const handleDelete = async (id) => {
+    try {
+      await deleteClient(id);
+      await load();
+      setDel(null);
+    } catch {
+      setError("Failed to delete client.");
+    }
   };
 
   return (
@@ -356,7 +438,7 @@ export default function Clients() {
             </thead>
             <tbody>
               {filtered.map((c) => (
-                <tr key={c.id}>
+                <tr key={c._id || c.id}>
                   <td>
                     <div className="flex items-center gap-3">
                       <Avatar name={c.name} />

@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { useState, useEffect } from "react";
 import {
   Plus,
@@ -11,7 +12,13 @@ import {
   Clock,
   Filter,
 } from "lucide-react";
-import { ticketService, clientService } from "../services/mockData";
+import {
+  fetchTickets,
+  createTicket,
+  updateTicket,
+  deleteTicket,
+  fetchClients,
+} from "../services/api";
 
 const STATUS_TABS = ["All", "Open", "In Progress", "Resolved"];
 
@@ -41,8 +48,7 @@ const Avatar = ({ name }) => {
 };
 
 /* ═══ Ticket Modal ═══ */
-const TicketModal = ({ ticket, onClose, onSave }) => {
-  const clients = clientService.getAll();
+const TicketModal = ({ ticket, onClose, onSave, clients = [] }) => {
   const [form, setForm] = useState(
     ticket
       ? { ...ticket }
@@ -55,44 +61,83 @@ const TicketModal = ({ ticket, onClose, onSave }) => {
   );
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
-  return (
+  return createPortal(
     <div className="modal-overlay" onClick={onClose}>
       <div
-        className="modal-card w-full max-w-[460px]"
+        className="modal-card w-full"
+        style={{ maxWidth: 480 }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="modal-header">
-          <h3 className="text-[16px] font-bold text-slate-900">
-            {ticket ? "Edit Ticket" : "Create Ticket"}
-          </h3>
+        {/* Gradient Header */}
+        <div
+          style={{
+            background: "linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)",
+            borderRadius: "20px 20px 0 0",
+            padding: "22px 26px 20px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <div
+              style={{
+                width: 44, height: 44, borderRadius: 12,
+                background: "rgba(255,255,255,0.18)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
+              }}
+            >
+              <LifeBuoy size={22} color="#fff" />
+            </div>
+            <div>
+              <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 2 }}>
+                {ticket ? "Edit Ticket" : "New Ticket"}
+              </p>
+              <h3 style={{ color: "#fff", fontSize: 17, fontWeight: 700, margin: 0 }}>
+                {ticket ? ticket.title : "Create a Support Ticket"}
+              </h3>
+            </div>
+          </div>
           <button
             onClick={onClose}
-            className="h-8 w-8 rounded-lg bg-slate-100 hover:bg-slate-200
-              flex items-center justify-center transition-colors text-slate-600"
+            style={{
+              width: 32, height: 32, borderRadius: 8,
+              background: "rgba(255,255,255,0.15)",
+              border: "none", cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.28)"}
+            onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.15)"}
           >
-            <X size={15} />
+            <X size={15} color="#fff" />
           </button>
         </div>
-        <div className="modal-body space-y-4">
+
+        {/* Body */}
+        <div style={{ padding: "24px 26px", display: "flex", flexDirection: "column", gap: 16, overflowY: "auto", minHeight: 0 }}>
           <div>
             <label className="label">Ticket Title</label>
             <input
               value={form.title}
               onChange={set("title")}
-              placeholder="Describe the issue briefly…"
+              placeholder="Describe the issue briefly..."
               className="input-base"
+              style={{ height: 44 }}
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
             <div>
               <label className="label">Client</label>
               <select
                 value={form.client}
                 onChange={set("client")}
-                className="input-base bg-white cursor-pointer"
+                className="input-base"
+                style={{ height: 44, background: "#fff", cursor: "pointer" }}
               >
-                {clients.map((c) => (
-                  <option key={c.id}>{c.name}</option>
+                <option value="">-- Select Client --</option>
+                {clients.map((cl) => (
+                  <option key={cl._id || cl.id} value={cl.name}>{cl.name}</option>
                 ))}
               </select>
             </div>
@@ -101,7 +146,8 @@ const TicketModal = ({ ticket, onClose, onSave }) => {
               <select
                 value={form.status}
                 onChange={set("status")}
-                className="input-base bg-white cursor-pointer"
+                className="input-base"
+                style={{ height: 44, background: "#fff", cursor: "pointer" }}
               >
                 <option>Open</option>
                 <option>In Progress</option>
@@ -116,31 +162,37 @@ const TicketModal = ({ ticket, onClose, onSave }) => {
               value={form.createdAt}
               onChange={set("createdAt")}
               className="input-base"
+              style={{ height: 44 }}
             />
           </div>
         </div>
-        <div className="modal-footer">
-          <button onClick={onClose} className="btn-secondary">
-            Cancel
-          </button>
+
+        {/* Footer */}
+        <div
+          style={{
+            display: "flex", alignItems: "center", justifyContent: "flex-end",
+            gap: 10, padding: "14px 26px 20px",
+            borderTop: "1px solid #f1f5f9", flexShrink: 0,
+          }}
+        >
+          <button onClick={onClose} className="btn-secondary">Cancel</button>
           <button
-            onClick={() => {
-              onSave(form);
-              onClose();
-            }}
+            onClick={() => { onSave(form); onClose(); }}
             className="btn-primary"
+            style={{ background: "linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)", boxShadow: "0 4px 14px rgba(239,68,68,0.3)" }}
           >
             <Check size={14} />
             {ticket ? "Save Changes" : "Create Ticket"}
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
 /* ═══ Delete modal ═══ */
-const DeleteModal = ({ ticket, onClose, onConfirm }) => (
+const DeleteModal = ({ ticket, onClose, onConfirm }) => createPortal(
   <div className="modal-overlay" onClick={onClose}>
     <div
       className="modal-card w-full max-w-[380px]"
@@ -174,7 +226,7 @@ const DeleteModal = ({ ticket, onClose, onConfirm }) => (
         </button>
         <button
           onClick={() => {
-            onConfirm(ticket.id);
+            onConfirm(ticket._id || ticket.id);
             onClose();
           }}
           className="h-[38px] px-5 rounded-[10px] flex items-center gap-2
@@ -184,7 +236,8 @@ const DeleteModal = ({ ticket, onClose, onConfirm }) => (
         </button>
       </div>
     </div>
-  </div>
+  </div>,
+  document.body
 );
 
 export default function Tickets() {
@@ -195,11 +248,27 @@ export default function Tickets() {
   const [editTicket, setEdit] = useState(null);
   const [delTicket, setDel] = useState(null);
 
-  useEffect(() => {
-    setAll(ticketService.getAll());
-  }, []);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [clientsList, setClientsList] = useState([]);
 
-  const reload = () => setAll(ticketService.getAll());
+  const reload = async () => {
+    try {
+      setLoading(true);
+      const { data } = await fetchTickets();
+      setAll(data);
+      setError("");
+    } catch {
+      setError("Failed to load tickets.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    reload();
+    fetchClients().then(r => setClientsList(r.data)).catch(() => {});
+  }, []);
 
   const counts = STATUS_TABS.reduce((acc, t) => {
     acc[t] =
@@ -213,7 +282,7 @@ export default function Tickets() {
     const matchQ =
       !q ||
       t.title.toLowerCase().includes(q) ||
-      t.client.toLowerCase().includes(q);
+      (t.client || "").toLowerCase().includes(q);
     return matchTab && matchQ;
   });
 
@@ -358,7 +427,7 @@ export default function Tickets() {
             </thead>
             <tbody>
               {filtered.map((t) => (
-                <tr key={t.id}>
+                <tr key={t._id || t.id}>
                   <td>
                     <div className="flex items-start gap-2.5">
                       <div
@@ -470,20 +539,20 @@ export default function Tickets() {
       {/* Modals */}
       {addModal && (
         <TicketModal
+          clients={clientsList}
           onClose={() => setAdd(false)}
-          onSave={(d) => {
-            ticketService.create(d);
-            reload();
+          onSave={async (d) => {
+            try { await createTicket(d); await reload(); setAdd(false); } catch(e) { setError(e.response?.data?.message || 'Failed to create ticket.'); }
           }}
         />
       )}
       {editTicket && (
         <TicketModal
+          clients={clientsList}
           ticket={editTicket}
           onClose={() => setEdit(null)}
-          onSave={(d) => {
-            ticketService.update(d.id, d);
-            reload();
+          onSave={async (d) => {
+            try { await updateTicket(d._id || d.id, d); await reload(); setEdit(null); } catch(e) { setError(e.response?.data?.message || 'Failed to update ticket.'); }
           }}
         />
       )}
@@ -491,9 +560,8 @@ export default function Tickets() {
         <DeleteModal
           ticket={delTicket}
           onClose={() => setDel(null)}
-          onConfirm={(id) => {
-            ticketService.delete(id);
-            reload();
+          onConfirm={async (id) => {
+            try { await deleteTicket(id); await reload(); setDel(null); } catch { setError("Failed to delete ticket."); }
           }}
         />
       )}

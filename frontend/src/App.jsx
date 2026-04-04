@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import DashboardLayout from "./layouts/DashboardLayout";
 import Login from "./pages/Login";
+import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Clients from "./pages/Clients";
 import Services from "./pages/Services";
@@ -19,6 +20,10 @@ function AppRoutes() {
       <Route
         path="/login"
         element={user ? <Navigate to="/" replace /> : <Login />}
+      />
+      <Route
+        path="/register"
+        element={user ? <Navigate to="/" replace /> : <Register />}
       />
       <Route
         element={
