@@ -300,11 +300,7 @@ export default function Chatbot() {
     setIsTyping(true);
 
     try {
-      const BACKEND = import.meta.env.VITE_API_URL
-        ? import.meta.env.VITE_API_URL.replace(/\/api$/, "")
-        : "http://localhost:5000";
-
-      const res = await fetch(`${BACKEND}/chat`, {
+      const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: trimmed }),
