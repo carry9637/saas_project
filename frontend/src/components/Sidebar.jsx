@@ -43,7 +43,15 @@ export default function Sidebar({ collapsed, setCollapsed }) {
           <Sparkles size={16} className="text-white" />
         </div>
         {!collapsed && (
-          <span className="ml-3 text-[15px] font-bold text-white tracking-tight">
+          <span
+            style={{
+              fontSize: "15px",
+              fontWeight: 700,
+              color: "#fff",
+              letterSpacing: "-0.02em",
+              marginLeft: "12px",
+            }}
+          >
             Corelystic
           </span>
         )}
@@ -63,7 +71,17 @@ export default function Sidebar({ collapsed, setCollapsed }) {
       {/* ── Main nav ── */}
       <nav className="flex-1 overflow-y-auto overflow-x-hidden py-4 px-3 space-y-0.5">
         {!collapsed && (
-          <p className="px-2 pb-2 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-600">
+          <p
+            style={{
+              fontSize: "10px",
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: "0.12em",
+              color: "#475569",
+              paddingLeft: "8px",
+              paddingBottom: "8px",
+            }}
+          >
             Main Menu
           </p>
         )}
@@ -83,7 +101,17 @@ export default function Sidebar({ collapsed, setCollapsed }) {
         {/* Growth tools section */}
         <div className={`${collapsed ? "pt-2" : "pt-5"}`}>
           {!collapsed && (
-            <p className="px-2 pb-2 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-600">
+            <p
+              style={{
+                fontSize: "10px",
+                fontWeight: 700,
+                textTransform: "uppercase",
+                letterSpacing: "0.12em",
+                color: "#475569",
+                paddingLeft: "8px",
+                paddingBottom: "8px",
+              }}
+            >
               Growth Tools
             </p>
           )}
@@ -117,13 +145,34 @@ export default function Sidebar({ collapsed, setCollapsed }) {
         <div className="border-t border-[#1e293b] px-4 py-3 shrink-0">
           <div className="flex items-center gap-3">
             <div className="h-8 w-8 shrink-0 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-              <span className="text-[11px] font-bold text-white">AU</span>
+              <span
+                style={{ fontSize: "11px", fontWeight: 700, color: "#fff" }}
+              >
+                AU
+              </span>
             </div>
             <div className="min-w-0">
-              <p className="text-[13px] font-semibold text-slate-200 truncate">
+              <p
+                style={{
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  color: "#e2e8f0",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
                 Admin User
               </p>
-              <p className="text-[11px] text-slate-500 truncate">
+              <p
+                style={{
+                  fontSize: "11px",
+                  color: "#64748b",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
                 admin@saas.com
               </p>
             </div>
@@ -133,7 +182,9 @@ export default function Sidebar({ collapsed, setCollapsed }) {
       {collapsed && (
         <div className="border-t border-[#1e293b] px-3 py-3 shrink-0 flex justify-center">
           <div className="h-8 w-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-            <span className="text-[11px] font-bold text-white">AU</span>
+            <span style={{ fontSize: "11px", fontWeight: 700, color: "#fff" }}>
+              AU
+            </span>
           </div>
         </div>
       )}

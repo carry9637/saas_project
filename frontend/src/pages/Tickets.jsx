@@ -1,5 +1,5 @@
-import { createPortal } from 'react-dom';
-import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
+import { useState, useEffect, useRef } from "react";
 import {
   Plus,
   Pencil,
@@ -47,6 +47,181 @@ const Avatar = ({ name }) => {
   );
 };
 
+/* ═══ Quick Status Dropdown ═══ */
+const STATUS_OPTIONS = [
+  { value: "Open", dot: "#f87171", bg: "#fef2f2", color: "#dc2626" },
+  { value: "In Progress", dot: "#fbbf24", bg: "#fffbeb", color: "#d97706" },
+  { value: "Resolved", dot: "#4ade80", bg: "#f0fdf4", color: "#16a34a" },
+];
+
+const StatusDropdown = ({ ticket, onStatusChange }) => {
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+  const btnRef = useRef(null);
+  const portalRef = useRef(null);
+  const current =
+    STATUS_OPTIONS.find((s) => s.value === ticket.status) || STATUS_OPTIONS[0];
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e) => {
+      const insideBtn = btnRef.current && btnRef.current.contains(e.target);
+      const insidePortal =
+        portalRef.current && portalRef.current.contains(e.target);
+      if (!insideBtn && !insidePortal) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const handleOpen = () => {
+    if (!open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      // open upward if too close to bottom
+      const dropdownH = 130;
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const top =
+        spaceBelow < dropdownH + 10
+          ? rect.top + window.scrollY - dropdownH - 6
+          : rect.bottom + window.scrollY + 6;
+      setPos({ top, left: rect.left + window.scrollX });
+    }
+    setOpen((p) => !p);
+  };
+
+  return (
+    <>
+      <button
+        ref={btnRef}
+        onClick={handleOpen}
+        title="Click to change status"
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "6px",
+          padding: "4px 10px 4px 8px",
+          borderRadius: "99px",
+          border: "none",
+          background: current.bg,
+          color: current.color,
+          fontSize: "12px",
+          fontWeight: 600,
+          cursor: "pointer",
+          transition: "opacity 0.15s",
+          whiteSpace: "nowrap",
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.8")}
+        onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+      >
+        <span
+          style={{
+            width: 6,
+            height: 6,
+            borderRadius: "50%",
+            background: current.dot,
+            flexShrink: 0,
+          }}
+        />
+        {ticket.status}
+        <svg
+          width="10"
+          height="10"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{ marginLeft: 2 }}
+        >
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </button>
+
+      {open &&
+        createPortal(
+          <div
+            ref={portalRef}
+            style={{
+              position: "absolute",
+              top: pos.top,
+              left: pos.left,
+              zIndex: 99999,
+              background: "#fff",
+              border: "1px solid #e2e8f0",
+              borderRadius: "12px",
+              boxShadow: "0 8px 28px rgba(0,0,0,0.14)",
+              padding: "6px",
+              minWidth: "155px",
+            }}
+          >
+            {STATUS_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => {
+                  onStatusChange(ticket._id || ticket.id, opt.value);
+                  setOpen(false);
+                }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  width: "100%",
+                  padding: "8px 10px",
+                  borderRadius: "8px",
+                  border: "none",
+                  background:
+                    ticket.status === opt.value ? opt.bg : "transparent",
+                  color: ticket.status === opt.value ? opt.color : "#374151",
+                  fontSize: "13px",
+                  fontWeight: ticket.status === opt.value ? 600 : 500,
+                  cursor: "pointer",
+                  textAlign: "left",
+                  transition: "background 0.12s",
+                }}
+                onMouseEnter={(e) => {
+                  if (ticket.status !== opt.value)
+                    e.currentTarget.style.background = "#f8fafc";
+                }}
+                onMouseLeave={(e) => {
+                  if (ticket.status !== opt.value)
+                    e.currentTarget.style.background = "transparent";
+                }}
+              >
+                <span
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: "50%",
+                    background: opt.dot,
+                    flexShrink: 0,
+                  }}
+                />
+                {opt.value}
+                {ticket.status === opt.value && (
+                  <svg
+                    style={{ marginLeft: "auto" }}
+                    width="13"
+                    height="13"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                )}
+              </button>
+            ))}
+          </div>,
+          document.body,
+        )}
+    </>
+  );
+};
+
 /* ═══ Ticket Modal ═══ */
 const TicketModal = ({ ticket, onClose, onSave, clients = [] }) => {
   const [form, setForm] = useState(
@@ -82,19 +257,39 @@ const TicketModal = ({ ticket, onClose, onSave, clients = [] }) => {
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <div
               style={{
-                width: 44, height: 44, borderRadius: 12,
+                width: 44,
+                height: 44,
+                borderRadius: 12,
                 background: "rgba(255,255,255,0.18)",
-                display: "flex", alignItems: "center", justifyContent: "center",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
                 boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
               }}
             >
               <LifeBuoy size={22} color="#fff" />
             </div>
             <div>
-              <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 2 }}>
+              <p
+                style={{
+                  color: "rgba(255,255,255,0.75)",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  marginBottom: 2,
+                }}
+              >
                 {ticket ? "Edit Ticket" : "New Ticket"}
               </p>
-              <h3 style={{ color: "#fff", fontSize: 17, fontWeight: 700, margin: 0 }}>
+              <h3
+                style={{
+                  color: "#fff",
+                  fontSize: 17,
+                  fontWeight: 700,
+                  margin: 0,
+                }}
+              >
                 {ticket ? ticket.title : "Create a Support Ticket"}
               </h3>
             </div>
@@ -102,20 +297,38 @@ const TicketModal = ({ ticket, onClose, onSave, clients = [] }) => {
           <button
             onClick={onClose}
             style={{
-              width: 32, height: 32, borderRadius: 8,
+              width: 32,
+              height: 32,
+              borderRadius: 8,
               background: "rgba(255,255,255,0.15)",
-              border: "none", cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center",
+              border: "none",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
             }}
-            onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.28)"}
-            onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.15)"}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.background = "rgba(255,255,255,0.28)")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.background = "rgba(255,255,255,0.15)")
+            }
           >
             <X size={15} color="#fff" />
           </button>
         </div>
 
         {/* Body */}
-        <div style={{ padding: "24px 26px", display: "flex", flexDirection: "column", gap: 16, overflowY: "auto", minHeight: 0 }}>
+        <div
+          style={{
+            padding: "24px 26px",
+            display: "flex",
+            flexDirection: "column",
+            gap: 16,
+            overflowY: "auto",
+            minHeight: 0,
+          }}
+        >
           <div>
             <label className="label">Ticket Title</label>
             <input
@@ -126,7 +339,9 @@ const TicketModal = ({ ticket, onClose, onSave, clients = [] }) => {
               style={{ height: 44 }}
             />
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+          <div
+            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}
+          >
             <div>
               <label className="label">Client</label>
               <select
@@ -137,7 +352,9 @@ const TicketModal = ({ ticket, onClose, onSave, clients = [] }) => {
               >
                 <option value="">-- Select Client --</option>
                 {clients.map((cl) => (
-                  <option key={cl._id || cl.id} value={cl.name}>{cl.name}</option>
+                  <option key={cl._id || cl.id} value={cl.name}>
+                    {cl.name}
+                  </option>
                 ))}
               </select>
             </div>
@@ -170,16 +387,28 @@ const TicketModal = ({ ticket, onClose, onSave, clients = [] }) => {
         {/* Footer */}
         <div
           style={{
-            display: "flex", alignItems: "center", justifyContent: "flex-end",
-            gap: 10, padding: "14px 26px 20px",
-            borderTop: "1px solid #f1f5f9", flexShrink: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            gap: 10,
+            padding: "14px 26px 20px",
+            borderTop: "1px solid #f1f5f9",
+            flexShrink: 0,
           }}
         >
-          <button onClick={onClose} className="btn-secondary">Cancel</button>
+          <button onClick={onClose} className="btn-secondary">
+            Cancel
+          </button>
           <button
-            onClick={() => { onSave(form); onClose(); }}
+            onClick={() => {
+              onSave(form);
+              onClose();
+            }}
             className="btn-primary"
-            style={{ background: "linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)", boxShadow: "0 4px 14px rgba(239,68,68,0.3)" }}
+            style={{
+              background: "linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)",
+              boxShadow: "0 4px 14px rgba(239,68,68,0.3)",
+            }}
           >
             <Check size={14} />
             {ticket ? "Save Changes" : "Create Ticket"}
@@ -187,58 +416,63 @@ const TicketModal = ({ ticket, onClose, onSave, clients = [] }) => {
         </div>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 };
 
 /* ═══ Delete modal ═══ */
-const DeleteModal = ({ ticket, onClose, onConfirm }) => createPortal(
-  <div className="modal-overlay" onClick={onClose}>
-    <div
-      className="modal-card w-full max-w-[380px]"
-      onClick={(e) => e.stopPropagation()}
-    >
-      <div className="modal-header">
-        <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-xl bg-red-100 flex items-center justify-center">
-            <AlertCircle size={17} className="text-red-600" />
+const DeleteModal = ({ ticket, onClose, onConfirm }) =>
+  createPortal(
+    <div className="modal-overlay" onClick={onClose}>
+      <div
+        className="modal-card w-full max-w-[380px]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="modal-header">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-xl bg-red-100 flex items-center justify-center">
+              <AlertCircle size={17} className="text-red-600" />
+            </div>
+            <h3 className="text-[15px] font-bold text-slate-900">
+              Close Ticket
+            </h3>
           </div>
-          <h3 className="text-[15px] font-bold text-slate-900">Close Ticket</h3>
-        </div>
-        <button
-          onClick={onClose}
-          className="h-8 w-8 rounded-lg bg-slate-100 hover:bg-slate-200
+          <button
+            onClick={onClose}
+            className="h-8 w-8 rounded-lg bg-slate-100 hover:bg-slate-200
             flex items-center justify-center transition-colors text-slate-600"
-        >
-          <X size={15} />
-        </button>
-      </div>
-      <div className="modal-body">
-        <p className="text-[14px] text-slate-600 leading-relaxed">
-          Permanently delete ticket:{" "}
-          <span className="font-semibold text-slate-900">"{ticket.title}"</span>
-          ?
-        </p>
-      </div>
-      <div className="modal-footer">
-        <button onClick={onClose} className="btn-secondary">
-          Cancel
-        </button>
-        <button
-          onClick={() => {
-            onConfirm(ticket._id || ticket.id);
-            onClose();
-          }}
-          className="h-[38px] px-5 rounded-[10px] flex items-center gap-2
+          >
+            <X size={15} />
+          </button>
+        </div>
+        <div className="modal-body">
+          <p className="text-[14px] text-slate-600 leading-relaxed">
+            Permanently delete ticket:{" "}
+            <span className="font-semibold text-slate-900">
+              "{ticket.title}"
+            </span>
+            ?
+          </p>
+        </div>
+        <div className="modal-footer">
+          <button onClick={onClose} className="btn-secondary">
+            Cancel
+          </button>
+          <button
+            onClick={() => {
+              onConfirm(ticket._id || ticket.id);
+              onClose();
+            }}
+            className="h-[38px] px-5 rounded-[10px] flex items-center gap-2
             text-[13.5px] font-semibold text-white bg-red-500 hover:bg-red-600 transition-colors"
-        >
-          <Trash2 size={14} /> Delete
-        </button>
+          >
+            <Trash2 size={14} /> Delete
+          </button>
+        </div>
       </div>
-    </div>
-  </div>,
-  document.body
-);
+    </div>,
+    document.body,
+  );
 
 export default function Tickets() {
   const [all, setAll] = useState([]);
@@ -247,6 +481,19 @@ export default function Tickets() {
   const [addModal, setAdd] = useState(false);
   const [editTicket, setEdit] = useState(null);
   const [delTicket, setDel] = useState(null);
+
+  const handleStatusChange = async (id, newStatus) => {
+    try {
+      await updateTicket(id, { status: newStatus });
+      setAll((prev) =>
+        prev.map((t) =>
+          t._id === id || t.id === id ? { ...t, status: newStatus } : t,
+        ),
+      );
+    } catch {
+      setError("Failed to update status.");
+    }
+  };
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -267,7 +514,9 @@ export default function Tickets() {
 
   useEffect(() => {
     reload();
-    fetchClients().then(r => setClientsList(r.data)).catch(() => {});
+    fetchClients()
+      .then((r) => setClientsList(r.data))
+      .catch(() => {});
   }, []);
 
   const counts = STATUS_TABS.reduce((acc, t) => {
@@ -454,9 +703,10 @@ export default function Tickets() {
                     </div>
                   </td>
                   <td>
-                    <span className={`badge ${statusClass(t.status)}`}>
-                      {t.status}
-                    </span>
+                    <StatusDropdown
+                      ticket={t}
+                      onStatusChange={handleStatusChange}
+                    />
                   </td>
                   <td>
                     <div className="flex items-center gap-1.5 text-[13px] text-slate-500">
@@ -542,7 +792,13 @@ export default function Tickets() {
           clients={clientsList}
           onClose={() => setAdd(false)}
           onSave={async (d) => {
-            try { await createTicket(d); await reload(); setAdd(false); } catch(e) { setError(e.response?.data?.message || 'Failed to create ticket.'); }
+            try {
+              await createTicket(d);
+              await reload();
+              setAdd(false);
+            } catch (e) {
+              setError(e.response?.data?.message || "Failed to create ticket.");
+            }
           }}
         />
       )}
@@ -552,7 +808,13 @@ export default function Tickets() {
           ticket={editTicket}
           onClose={() => setEdit(null)}
           onSave={async (d) => {
-            try { await updateTicket(d._id || d.id, d); await reload(); setEdit(null); } catch(e) { setError(e.response?.data?.message || 'Failed to update ticket.'); }
+            try {
+              await updateTicket(d._id || d.id, d);
+              await reload();
+              setEdit(null);
+            } catch (e) {
+              setError(e.response?.data?.message || "Failed to update ticket.");
+            }
           }}
         />
       )}
@@ -561,7 +823,13 @@ export default function Tickets() {
           ticket={delTicket}
           onClose={() => setDel(null)}
           onConfirm={async (id) => {
-            try { await deleteTicket(id); await reload(); setDel(null); } catch { setError("Failed to delete ticket."); }
+            try {
+              await deleteTicket(id);
+              await reload();
+              setDel(null);
+            } catch {
+              setError("Failed to delete ticket.");
+            }
           }}
         />
       )}
