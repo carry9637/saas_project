@@ -14,10 +14,12 @@ const app = express();
 
 connectDB();
 
-app.use(cors({
-  origin: process.env.FRONTEND_URL || "http://localhost:5173",
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    credentials: true,
+  }),
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -66,12 +68,10 @@ app.post("/chat", async (req, res) => {
     res.json({ reply });
   } catch (err) {
     console.error("Groq API error:", err?.response?.data || err.message);
-    res
-      .status(500)
-      .json({
-        reply:
-          "Sorry, I'm having trouble connecting right now. Please try again.",
-      });
+    res.status(500).json({
+      reply:
+        "Sorry, I'm having trouble connecting right now. Please try again.",
+    });
   }
 });
 
